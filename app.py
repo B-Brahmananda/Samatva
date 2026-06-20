@@ -22,12 +22,12 @@ from anthropic import Anthropic
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-APP_VERSION: str = "5.0.0"
+APP_VERSION: str = "5.1.0"
 MODEL_ID: str = "claude-sonnet-4-6"
 MAX_TOKENS: int = 1500
 MAX_CHAT_HISTORY: int = 10
 MAX_JOURNAL_ENTRIES: int = 30
-MIN_JOURNAL_LENGTH: int = 20
+MIN_JOURNAL_LENGTH: int = 10
 MAX_JOURNAL_LENGTH: int = 3000
 
 CRISIS_RESOURCES: str = (
@@ -338,129 +338,117 @@ st.markdown("""
 # ── Voice Input Component ─────────────────────────────────────────────────────
 
 VOICE_INPUT_HTML = """
-<div id="voice-container" style="margin: 0.5rem 0;">
+<div id="voice-container" style="font-family:Georgia,serif;">
     <button id="voiceBtn"
         onclick="toggleVoice()"
         aria-label="Click to start voice input"
         style="background:#5A7A6A; color:#FFFFFF; border:2px solid #3D5C47;
-               border-radius:8px; padding:0.5rem 1.2rem; font-size:0.95rem;
-               font-weight:700; cursor:pointer; min-height:44px;
-               font-family:Calibri,sans-serif; display:flex; align-items:center; gap:0.5rem;">
+               border-radius:8px; padding:0.5rem 1.4rem; font-size:0.95rem;
+               font-weight:700; cursor:pointer; min-height:44px; display:inline-block;">
         🎤 Speak Instead
     </button>
+
     <div id="voiceStatus"
         aria-live="polite"
-        style="margin-top:0.4rem; font-size:0.85rem;
-               color:#5A7A6A; font-style:italic; min-height:1.2rem;">
+        style="margin-top:0.5rem; font-size:0.88rem;
+               color:#5A7A6A; font-style:italic; min-height:1.4rem;">
     </div>
-    <div id="voiceResult"
-        style="margin-top:0.4rem; background:#FFFFFF;
+
+    <div id="voiceBox"
+        style="display:none; margin-top:0.5rem; background:#FFFFFF;
                border:2px solid #8B7355; border-radius:8px;
-               padding:0.6rem 0.8rem; font-size:0.95rem;
-               color:#1A2634; display:none; line-height:1.6;
-               font-family:Georgia,serif;">
+               padding:0.8rem 1rem; font-size:0.95rem; color:#1A2634;
+               line-height:1.7; font-family:Georgia,serif; min-height:60px;">
     </div>
-    <button id="copyBtn"
-        onclick="copyToClipboard()"
-        style="display:none; margin-top:0.4rem;
-               background:#6B4C2A; color:#FFFFFF;
-               border:2px solid #4A3018; border-radius:8px;
-               padding:0.4rem 1rem; font-size:0.88rem;
-               font-weight:700; cursor:pointer; min-height:40px;">
-        📋 Copy to Journal
-    </button>
+
+    <div id="instructBox"
+        style="display:none; margin-top:0.5rem; background:#FDF3E7;
+               border:1px solid #C9A84C; border-radius:8px;
+               padding:0.6rem 1rem; font-size:0.88rem; color:#5C3D1E;">
+        ✅ <strong>Select all the text above → Copy (Ctrl+C) → Paste (Ctrl+V) into the journal box.</strong>
+    </div>
 </div>
 
 <script>
-let recognition = null;
-let isListening = false;
-let finalText = '';
+var recognition = null;
+var isListening = false;
+var finalText = '';
 
 function toggleVoice() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         document.getElementById('voiceStatus').innerText =
-            '⚠️ Voice input not supported. Please use Chrome or Edge browser.';
+            '⚠️ Not supported in this browser. Please open Samatva in Chrome or Edge.';
         return;
     }
-
-    if (isListening) {
-        stopListening();
-    } else {
-        startListening();
-    }
+    if (isListening) { stopListening(); }
+    else { startListening(); }
 }
 
 function startListening() {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SR();
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = 'en-IN';
+    finalText = '';
 
     recognition.onstart = function() {
         isListening = true;
-        document.getElementById('voiceBtn').innerHTML = '⏹ Stop Listening';
-        document.getElementById('voiceBtn').style.background = '#C06080';
-        document.getElementById('voiceBtn').style.borderColor = '#8B3060';
-        document.getElementById('voiceStatus').innerText = '🔴 Listening... speak freely';
-        document.getElementById('voiceResult').style.display = 'block';
-        document.getElementById('copyBtn').style.display = 'none';
+        document.getElementById('voiceBtn').innerHTML = '⏹ Stop Recording';
+        document.getElementById('voiceBtn').style.background = '#B03060';
+        document.getElementById('voiceBtn').style.borderColor = '#7A1040';
+        document.getElementById('voiceStatus').innerText = '🔴 Listening... speak freely in English or Hindi';
+        document.getElementById('voiceBox').style.display = 'block';
+        document.getElementById('instructBox').style.display = 'none';
+        document.getElementById('voiceBox').innerText = '';
     };
 
     recognition.onresult = function(event) {
-        let interim = '';
+        var interim = '';
         finalText = '';
-        for (let i = 0; i < event.results.length; i++) {
+        for (var i = 0; i < event.results.length; i++) {
             if (event.results[i].isFinal) {
                 finalText += event.results[i][0].transcript + ' ';
             } else {
                 interim += event.results[i][0].transcript;
             }
         }
-        document.getElementById('voiceResult').innerText =
-            finalText + (interim ? '...' + interim : '');
+        document.getElementById('voiceBox').innerText =
+            finalText + (interim ? interim : '');
     };
 
-    recognition.onend = function() {
+    recognition.onend = function() { stopListening(); };
+    recognition.onerror = function(e) {
+        document.getElementById('voiceStatus').innerText = '⚠️ Error: ' + e.error;
         stopListening();
     };
-
-    recognition.onerror = function(event) {
-        document.getElementById('voiceStatus').innerText =
-            '⚠️ Error: ' + event.error + '. Please try again.';
-        stopListening();
-    };
-
     recognition.start();
 }
 
 function stopListening() {
-    if (recognition) recognition.stop();
+    if (recognition) { try { recognition.stop(); } catch(e) {} }
     isListening = false;
     document.getElementById('voiceBtn').innerHTML = '🎤 Speak Instead';
     document.getElementById('voiceBtn').style.background = '#5A7A6A';
     document.getElementById('voiceBtn').style.borderColor = '#3D5C47';
 
-    if (finalText.trim()) {
-        document.getElementById('voiceStatus').innerText =
-            '✅ Done! Copy the text below into your journal.';
-        document.getElementById('copyBtn').style.display = 'inline-block';
-    } else {
-        document.getElementById('voiceStatus').innerText =
-            '⚠️ No speech detected. Try again.';
-    }
-}
+    var text = document.getElementById('voiceBox').innerText.trim();
+    if (text.length > 0) {
+        document.getElementById('voiceStatus').innerText = '✅ Done! Follow the steps below:';
+        document.getElementById('instructBox').style.display = 'block';
 
-function copyToClipboard() {
-    const text = document.getElementById('voiceResult').innerText;
-    navigator.clipboard.writeText(text).then(function() {
-        document.getElementById('voiceStatus').innerText =
-            '📋 Copied! Now paste it (Ctrl+V) into the journal box above.';
-        document.getElementById('copyBtn').innerText = '✅ Copied!';
-        setTimeout(function() {
-            document.getElementById('copyBtn').innerText = '📋 Copy to Journal';
-        }, 2000);
-    });
+        /* Make the text box selectable and pre-select it */
+        var box = document.getElementById('voiceBox');
+        box.setAttribute('contenteditable', 'true');
+        box.focus();
+        var range = document.createRange();
+        range.selectNodeContents(box);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } else {
+        document.getElementById('voiceStatus').innerText = '⚠️ No speech detected. Try again.';
+    }
 }
 </script>
 """
@@ -817,7 +805,6 @@ def render_journal_tab() -> None:
     analyze_clicked: bool = col1.button(
         "🔍 Analyze & Reflect",
         use_container_width=True,
-        type="primary",
         help="Send your journal to Manas for AI analysis"
     )
     clear_clicked: bool = col2.button(
@@ -839,14 +826,14 @@ def render_journal_tab() -> None:
         '🎤 Too overwhelmed to type? Speak your feelings instead:</p>',
         unsafe_allow_html=True
     )
-    st.components.v1.html(VOICE_INPUT_HTML, height=160)
-    st.caption("Voice works on Chrome and Edge browsers. Paste copied text into journal above.")
+    st.components.v1.html(VOICE_INPUT_HTML, height=220)
+    st.caption("🎤 Voice works on Chrome and Edge. After stopping, select all text → Ctrl+C → Ctrl+V into journal above.")
     st.markdown("---")
 
     if analyze_clicked:
         is_valid, error_msg = validate_journal_input(journal_text)
         if not is_valid:
-            st.warning(f"⚠️ {error_msg}")
+            st.warning(f"⚠️ {error_msg} You can continue editing above.")
             return
 
         clean_text: str = sanitize_input(journal_text)
@@ -1065,7 +1052,7 @@ def render_chat_tab() -> None:
     send_clicked: bool = col1.button(
         "🕊 Send to Manas",
         use_container_width=True,
-        type="primary"
+        help="Send your message to Manas"
     )
     if col2.button("🗑 Clear Chat", use_container_width=True):
         st.session_state.chat_history = []
