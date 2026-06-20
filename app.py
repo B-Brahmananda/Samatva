@@ -161,8 +161,13 @@ st.markdown("""
         font-family: 'Philosopher', Cambria, serif !important;
     }
 
-    /* ── Buttons ── */
-    .stButton > button {
+    /* ── Buttons — force warm brown on ALL states ── */
+    .stButton > button,
+    .stButton > button:link,
+    .stButton > button:visited,
+    div[data-testid="stButton"] > button,
+    div[data-testid="column"] .stButton > button {
+        background-color: #6B4C2A !important;
         background: #6B4C2A !important;
         color: #FFFFFF !important;
         font-weight: 700 !important;
@@ -170,13 +175,29 @@ st.markdown("""
         border-radius: 8px !important;
         font-size: 1rem !important;
         min-height: 44px !important;
+        width: 100% !important;
     }
-    .stButton > button:hover {
+    .stButton > button:hover,
+    div[data-testid="stButton"] > button:hover {
+        background-color: #4A3018 !important;
         background: #4A3018 !important;
         color: #FFFFFF !important;
+        border-color: #2C1A0E !important;
     }
-    .stButton > button p {
+    .stButton > button:focus,
+    div[data-testid="stButton"] > button:focus {
+        background-color: #6B4C2A !important;
         color: #FFFFFF !important;
+        outline: 3px solid #C9A84C !important;
+    }
+    /* Force button text white */
+    .stButton > button *,
+    .stButton > button p,
+    .stButton > button span,
+    div[data-testid="stButton"] > button p,
+    div[data-testid="stButton"] > button span {
+        color: #FFFFFF !important;
+        background: transparent !important;
     }
 
     /* ── Text areas ── */
@@ -300,21 +321,6 @@ st.markdown("""
         background: #3D5C47 !important;
     }
     .voice-btn p { color: #FFFFFF !important; }
-
-    /* ── Skip nav ── */
-    .skip-nav {
-        position: absolute;
-        top: -40px;
-        left: 0;
-        background: #5C3D1E;
-        color: #FFFFFF !important;
-        padding: 8px;
-        text-decoration: none;
-        font-weight: 700;
-        z-index: 9999;
-        border-radius: 0 0 8px 0;
-    }
-    .skip-nav:focus { top: 0; }
 
     /* ── Focus visible ── */
     *:focus-visible {
@@ -671,10 +677,6 @@ GUARDRAILS (non-negotiable):
 def render_header() -> None:
     """Render smooth ivory header with Sanskrit font — no black bar."""
     st.markdown(
-        '<a href="#main-content" class="skip-nav">Skip to main content</a>',
-        unsafe_allow_html=True
-    )
-    st.markdown(
         '<header role="banner" aria-label="Samatva Application Header">'
         '<div class="samatva-title" role="heading" aria-level="1">Samatva</div>'
         '<div class="samatva-tagline">'
@@ -717,28 +719,6 @@ def render_sidebar() -> None:
                 + CRISIS_RESOURCES + '</div>',
                 unsafe_allow_html=True
             )
-
-        st.divider()
-
-        # Why Samatva vs Claude directly
-        with st.expander("🤔 Why not just use Claude?"):
-            st.markdown("""
-**Samatva vs Raw Claude:**
-
-✅ **Structured analysis** — emotion, intensity, patterns, triggers — not just chat
-
-✅ **Manas already knows your state** before you type — journal auto-primes chat
-
-✅ **Cultural context** — Indian exam world baked in (kitna aaya, coaching pressure)
-
-✅ **Mood dashboard** — tracks your emotional journey over time
-
-✅ **Crisis safety net** — iCall/Vandrevala auto-triggered
-
-✅ **Voice input** — speak when typing feels too hard
-
-*Claude is the engine. Samatva is built for this specific road.*
-""")
 
         st.divider()
         st.session_state.dev_mode = st.toggle(
