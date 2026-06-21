@@ -1,6 +1,6 @@
 """
 Samatva - AI Mental Wellness Companion for Indian Exam Students
-Version: 5.5.0 - Fix Clear button; value= pattern replaces key-deletion hack
+Version: 5.6.0 - Restore button color via minimal CSS; config.toml confirmed correct
 """
 
 import os
@@ -115,6 +115,23 @@ st.markdown("""
 h1, h2, h3 {
     color: #5C3D1E !important;
     font-family: 'Philosopher', serif !important;
+}
+
+/* Buttons — minimal targeted rule; config.toml handles primary color
+   but secondary buttons need explicit background on Streamlit Cloud */
+.stButton > button {
+    background-color: #6B4C2A !important;
+    color: #FFFFFF !important;
+    border: 2px solid #4A3018 !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+}
+.stButton > button:hover {
+    background-color: #4A3018 !important;
+    color: #FFFFFF !important;
+}
+.stButton > button p {
+    color: #FFFFFF !important;
 }
 
 /* Textarea */
