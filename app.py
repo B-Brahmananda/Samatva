@@ -1,6 +1,6 @@
 """
 Samatva - AI Mental Wellness Companion for Indian Exam Students
-Version: 5.4.0 - Fix Analyze button regression; voice component moved after handlers
+Version: 5.5.0 - Fix Clear button; value= pattern replaces key-deletion hack
 """
 
 import os
@@ -261,7 +261,6 @@ def init_session_state() -> None:
         "dev_mode": False,
         "api_client": None,
         "crisis_detected": False,
-        "clear_journal": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -456,36 +455,42 @@ def render_journal_tab() -> None:
         unsafe_allow_html=True
     )
 
-    # Clear button fix — delete widget key before render
-    jkey = "samatva_journal"
-    if st.session_state.get("clear_journal"):
-        st.session_state["clear_journal"] = False
-        if jkey in st.session_state:
-            del st.session_state[jkey]
+    # ── Journal text buffer ─────────────────────────────────────────────────────
+    # Use value= (not key=) so we can reset it reliably on Clear.
+    # Deleting a widget key mid-rerun doesn't work — Streamlit restores it
+    # from internal widget cache.  Holding the text in our own session key and
+    # passing it as value= gives us full control.
+    if "journal_text" not in st.session_state:
+        st.session_state["journal_text"] = ""
+
+    col1, col2 = st.columns([2, 1])
+    analyze_clicked = col1.button("🔍 Analyze & Reflect", use_container_width=True)
+    clear_clicked   = col2.button("🗑 Clear", use_container_width=True)
+
+    # Handle Clear BEFORE rendering text_area so value= sees the reset
+    if clear_clicked:
+        st.session_state["journal_text"] = ""
+        st.session_state.current_analysis = None
+        st.rerun()
 
     journal_text: str = st.text_area(
         label="Your journal entry",
+        value=st.session_state["journal_text"],
         placeholder=(
             "How are you feeling today? What's weighing on your mind?\n\n"
             "Maybe it's that mock test result, the pressure from home, "
             "or just the exhaustion of another long day...\n\n"
             "Write whatever feels true right now."
         ),
-        height=220, key=jkey,
-        help="Your journal is private to this session."
+        height=220,
+        key="samatva_journal_area",
+        help="Your journal is private to this session.",
     )
+    # Sync buffer so text survives reruns (e.g. after Analyze)
+    st.session_state["journal_text"] = journal_text
 
     word_count = len(journal_text.split()) if journal_text.strip() else 0
     st.caption(f"{word_count} words · {len(journal_text)}/{MAX_JOURNAL_LENGTH} characters")
-
-    col1, col2 = st.columns([2, 1])
-    analyze_clicked = col1.button("🔍 Analyze & Reflect", use_container_width=True)
-    clear_clicked   = col2.button("🗑 Clear", use_container_width=True)
-
-    if clear_clicked:
-        st.session_state["clear_journal"] = True
-        st.session_state.current_analysis = None
-        st.rerun()
 
     # ── Analyze handler — must be immediately after buttons, before any component ──
     if analyze_clicked:
@@ -730,7 +735,7 @@ def run_developer_tests() -> None:
     except Exception as e:
         results.append(("API Connectivity", False, str(e)[:80]))
 
-    req = ["journal_entries","chat_history","current_analysis","crisis_detected","clear_journal"]
+    req = ["journal_entries","chat_history","current_analysis","crisis_detected","journal_text"]
     miss = [k for k in req if k not in st.session_state]
     results.append(("Session State", not miss, "All keys present" if not miss else f"Missing: {miss}"))
 
