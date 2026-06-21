@@ -1,6 +1,6 @@
 """
 Samatva - AI Mental Wellness Companion for Indian Exam Students
-Version: 5.3.0 - Button fix via config.toml + clean CSS
+Version: 5.4.0 - Fix Analyze button regression; voice component moved after handlers
 """
 
 import os
@@ -487,45 +487,46 @@ def render_journal_tab() -> None:
         st.session_state.current_analysis = None
         st.rerun()
 
-    # Voice input
+    # ── Analyze handler — must be immediately after buttons, before any component ──
+    if analyze_clicked:
+        is_valid, error_msg = validate_journal_input(journal_text)
+        if not is_valid:
+            st.warning(f"⚠️ {error_msg} You can continue editing above.")
+        else:
+            clean = sanitize_input(journal_text)
+            with st.spinner("🪷 Manas is reflecting on your words..."):
+                try:
+                    analysis = analyze_journal(clean)
+                    st.session_state.current_analysis = analysis
+                    st.session_state.crisis_detected = (
+                        analysis.get("crisis_flag", False) or detect_crisis_keywords(clean)
+                    )
+                    entry = {
+                        "date": datetime.datetime.now().isoformat(),
+                        "text": clean[:500], "analysis": analysis
+                    }
+                    if len(st.session_state.journal_entries) >= MAX_JOURNAL_ENTRIES:
+                        st.session_state.journal_entries.pop(0)
+                    st.session_state.journal_entries.append(entry)
+
+                    primer = f"I just journaled. Summary: {analysis.get('summary', '')}"
+                    manas_resp = chat_with_manas(primer, analysis)
+                    st.session_state.chat_history.append({"role": "user", "content": primer})
+                    st.session_state.chat_history.append({"role": "assistant", "content": manas_resp})
+                    st.success("✅ Reflection complete! See your insights below.")
+                except json.JSONDecodeError:
+                    st.error("⚠️ Could not parse analysis response. Please try again.")
+                except ValueError as e:
+                    st.error(f"⚠️ {str(e)}")
+                except Exception as e:
+                    st.error(f"⚠️ Something went wrong: {str(e)}")
+
+    # ── Voice input — rendered after all button handlers ──
     st.markdown("---")
     st.markdown('<p style="color:#5A7A6A;font-size:0.88rem;font-weight:600;">🎤 Too overwhelmed to type? Speak your feelings instead:</p>', unsafe_allow_html=True)
     st.components.v1.html(VOICE_HTML, height=200)
     st.caption("Works on Chrome and Edge. After stopping: select text → Ctrl+C → Ctrl+V into journal above.")
     st.markdown("---")
-
-    if analyze_clicked:
-        is_valid, error_msg = validate_journal_input(journal_text)
-        if not is_valid:
-            st.warning(f"⚠️ {error_msg} You can continue editing above.")
-            return
-        clean = sanitize_input(journal_text)
-        with st.spinner("🪷 Manas is reflecting on your words..."):
-            try:
-                analysis = analyze_journal(clean)
-                st.session_state.current_analysis = analysis
-                st.session_state.crisis_detected = (
-                    analysis.get("crisis_flag", False) or detect_crisis_keywords(clean)
-                )
-                entry = {
-                    "date": datetime.datetime.now().isoformat(),
-                    "text": clean[:500], "analysis": analysis
-                }
-                if len(st.session_state.journal_entries) >= MAX_JOURNAL_ENTRIES:
-                    st.session_state.journal_entries.pop(0)
-                st.session_state.journal_entries.append(entry)
-
-                primer = f"I just journaled. Summary: {analysis.get('summary', '')}"
-                manas_resp = chat_with_manas(primer, analysis)
-                st.session_state.chat_history.append({"role": "user", "content": primer})
-                st.session_state.chat_history.append({"role": "assistant", "content": manas_resp})
-                st.success("✅ Reflection complete! See your insights below.")
-            except json.JSONDecodeError:
-                st.error("⚠️ Could not parse analysis response. Please try again.")
-            except ValueError as e:
-                st.error(f"⚠️ {str(e)}")
-            except Exception as e:
-                st.error(f"⚠️ Something went wrong: {str(e)}")
 
     if st.session_state.current_analysis:
         render_analysis_card(st.session_state.current_analysis)
