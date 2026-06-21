@@ -1,6 +1,6 @@
 """
 Samatva - AI Mental Wellness Companion for Indian Exam Students
-Version: 5.2.0 - Production clean UI
+Version: 5.3.0 - Button fix via config.toml + clean CSS
 """
 
 import os
@@ -79,61 +79,42 @@ st.markdown("""
     height: 0 !important;
 }
 
-/* Full ivory background */
-html, body { background-color: #F7F3EE !important; }
-.stApp, [data-testid="stAppViewContainer"],
+/* Remove top padding — fix for Streamlit Cloud whitespace */
 .main .block-container, [data-testid="stAppViewBlockContainer"] {
-    background-color: #F7F3EE !important;
-    padding-top: 1rem !important;
+    padding-top: 0.5rem !important;
 }
 
-/* All text dark */
-.stApp * { color: #1A2634 !important; }
-
 /* Sidebar */
-[data-testid="stSidebar"] { background-color: #EAE6DF !important; border-right: 2px solid #C8C0B4 !important; }
+[data-testid="stSidebar"] {
+    background-color: #EAE6DF !important;
+    border-right: 2px solid #C8C0B4 !important;
+}
 
 /* Title */
 .samatva-title {
     font-family: 'Philosopher', serif;
-    font-size: 2.8rem; font-weight: 700;
-    color: #7B5E3A !important;
-    letter-spacing: 0.1em; text-align: center;
-    margin: 0; padding: 0.5rem 0 0.1rem;
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: #7B5E3A;
+    letter-spacing: 0.1em;
+    text-align: center;
+    margin: 0;
+    padding: 0.5rem 0 0.1rem;
 }
 .samatva-tagline {
-    font-family: 'Philosopher', serif; font-style: italic;
-    font-size: 1rem; color: #9A8070 !important;
-    text-align: center; margin: 0; padding-bottom: 0.8rem;
+    font-family: 'Philosopher', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: #9A8070;
+    text-align: center;
+    margin: 0;
+    padding-bottom: 0.8rem;
 }
 
 /* Headings */
-h1, h2, h3 { color: #5C3D1E !important; font-family: 'Philosopher', serif !important; }
-
-/* BUTTONS — target every possible selector */
-button[kind="secondary"], button[kind="primary"],
-.stButton button, .stButton > button,
-div[data-testid="stButton"] button,
-div.stButton > button,
-[data-testid="baseButton-secondary"],
-[data-testid="baseButton-primary"] {
-    background-color: #6B4C2A !important;
-    color: white !important;
-    border: 2px solid #4A3018 !important;
-    border-radius: 8px !important;
-    font-weight: 700 !important;
-    min-height: 44px !important;
-}
-button[kind="secondary"]:hover, button[kind="primary"]:hover,
-.stButton button:hover, .stButton > button:hover {
-    background-color: #4A3018 !important;
-    color: white !important;
-}
-/* Force ALL children of buttons white */
-.stButton button *, .stButton > button *,
-div[data-testid="stButton"] button * {
-    color: white !important;
-    background: transparent !important;
+h1, h2, h3 {
+    color: #5C3D1E !important;
+    font-family: 'Philosopher', serif !important;
 }
 
 /* Textarea */
@@ -188,34 +169,6 @@ hr { border-color: #B8B0A4 !important; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
-
-<script>
-/* Force button styles via JS as a fallback for Streamlit Cloud dark theme */
-function fixButtons() {
-    var buttons = document.querySelectorAll(
-        '.stButton button, div[data-testid="stButton"] button, ' +
-        '[data-testid="baseButton-secondary"], [data-testid="baseButton-primary"]'
-    );
-    buttons.forEach(function(btn) {
-        btn.style.setProperty('background-color', '#6B4C2A', 'important');
-        btn.style.setProperty('color', '#FFFFFF', 'important');
-        btn.style.setProperty('border', '2px solid #4A3018', 'important');
-        btn.style.setProperty('border-radius', '8px', 'important');
-        btn.style.setProperty('font-weight', '700', 'important');
-        btn.style.setProperty('min-height', '44px', 'important');
-        /* Fix child text too */
-        btn.querySelectorAll('*').forEach(function(child) {
-            child.style.setProperty('color', '#FFFFFF', 'important');
-        });
-    });
-}
-/* Run on load and whenever DOM changes */
-document.addEventListener('DOMContentLoaded', fixButtons);
-setTimeout(fixButtons, 500);
-setTimeout(fixButtons, 1500);
-var observer = new MutationObserver(fixButtons);
-observer.observe(document.body, { childList: true, subtree: true });
-</script>
 """, unsafe_allow_html=True)
 
 
